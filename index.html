@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CanSat Ground Station</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <h1>🛰️ CanSat Ground Station</h1>
+            <p>Phase 1 Mission Dashboard</p>
+        </div>
+        <div class="live-status">
+            <span class="status-dot"></span>
+            <span id="live-label">LIVE</span>
+        </div>
+    </header>
+
+
+    <!-- SYSTEM OVERVIEW -->
+    <section class="overview">
+
+        <div class="overview-card">
+            <span>System</span>
+            <strong id="system-status">ACTIVE</strong>
+        </div>
+
+        <div class="overview-card">
+            <span>Communication</span>
+            <strong id="communication-status">CONNECTED</strong>
+        </div>
+
+        <div class="overview-card">
+            <span>Mission Time</span>
+            <strong id="mission-time">00:00:00</strong>
+        </div>
+
+        <div class="overview-card">
+            <span>Packets</span>
+            <strong id="packet-count">0</strong>
+        </div>
+
+    </section>
+
+
+    <!-- SENSOR DATA -->
+    <section>
+
+        <h2>Live Telemetry</h2>
+
+        <div class="sensor-grid">
+
+            <div class="sensor-card">
+                <span class="sensor-icon">🌡️</span>
+                <p>Temperature</p>
+                <h3 id="temperature">-- °C</h3>
+            </div>
+
+            <div class="sensor-card">
+                <span class="sensor-icon">💨</span>
+                <p>Pressure</p>
+                <h3 id="pressure">-- hPa</h3>
+            </div>
+
+            <div class="sensor-card">
+                <span class="sensor-icon">📏</span>
+                <p>Altitude</p>
+                <h3 id="altitude">-- m</h3>
+            </div>
+
+            <div class="sensor-card">
+                <span class="sensor-icon">🔋</span>
+                <p>Battery</p>
+                <h3 id="battery">N/A</h3>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- GRAPHS -->
+    <section>
+
+        <h2>Telemetry Graphs</h2>
+
+        <div class="graph-grid">
+
+            <div class="graph-card">
+                <h3>Altitude vs Time</h3>
+                <canvas id="altitudeChart"></canvas>
+            </div>
+
+            <div class="graph-card">
+                <h3>Temperature vs Time</h3>
+                <canvas id="temperatureChart"></canvas>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- TELEMETRY LOG -->
+    <section>
+
+        <h2>Telemetry Log</h2>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Temperature</th>
+                        <th>Pressure</th>
+                        <th>Altitude</th>
+                        <th>Battery</th>
+                    </tr>
+                </thead>
+
+                <tbody id="telemetry-body">
+                    <!-- JavaScript will add data here -->
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
