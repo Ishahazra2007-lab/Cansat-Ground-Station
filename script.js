@@ -1,16 +1,33 @@
 
 // ==========================================
 // CanSat Ground Station
-// CSV Telemetry Replay
+// CSV Upload Telemetry System
 // ==========================================
 
-const CSV_FILE = "telemetry.csv";
+
+// ==========================================
+// SETTINGS
+// ==========================================
+
+// Time between telemetry packets
+// 1000 = 1 second
+
 const REPLAY_INTERVAL = 1000;
 
 
 // ==========================================
 // HTML ELEMENTS
 // ==========================================
+
+const csvFile =
+    document.getElementById("csvFile");
+
+const uploadButton =
+    document.getElementById("uploadButton");
+
+const fileName =
+    document.getElementById("file-name");
+
 
 const systemStatus =
     document.getElementById("system-status");
@@ -24,6 +41,7 @@ const missionTime =
 const packetCounter =
     document.getElementById("packet-count");
 
+
 const temperatureDisplay =
     document.getElementById("temperature");
 
@@ -36,12 +54,20 @@ const altitudeDisplay =
 const batteryDisplay =
     document.getElementById("battery");
 
+
 const telemetryBody =
     document.getElementById("telemetry-body");
 
 
+const liveLabel =
+    document.getElementById("live-label");
+
+const statusDot =
+    document.getElementById("status-dot");
+
+
 // ==========================================
-// TELEMETRY ARRAYS
+// DATA
 // ==========================================
 
 let telemetryData = [];
@@ -50,9 +76,19 @@ let currentPacketIndex = 0;
 
 let receivedPackets = 0;
 
+let replayTimer = null;
+
+
+// ==========================================
+// GRAPH DATA
+// ==========================================
+
 let timeData = [];
+
 let altitudeData = [];
+
 let temperatureData = [];
+
 let pressureData = [];
 
 
@@ -65,22 +101,35 @@ function formatMissionTime(milliseconds) {
     const totalSeconds =
         Math.floor(milliseconds / 1000);
 
+
     const hours =
         Math.floor(totalSeconds / 3600);
 
+
     const minutes =
-        Math.floor((totalSeconds % 3600) / 60);
+        Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
 
     const seconds =
         totalSeconds % 60;
 
+
     return (
+
         String(hours).padStart(2, "0") +
+
         ":" +
+
         String(minutes).padStart(2, "0") +
+
         ":" +
+
         String(seconds).padStart(2, "0")
+
     );
+
 }
 
 
@@ -89,10 +138,13 @@ function formatMissionTime(milliseconds) {
 // ==========================================
 
 const altitudeChart =
+
     new Chart(
+
         document
             .getElementById("altitudeChart")
             .getContext("2d"),
+
         {
 
             type: "line",
@@ -101,19 +153,23 @@ const altitudeChart =
 
                 labels: [],
 
-                datasets: [{
+                datasets: [
 
-                    label: "Altitude (m)",
+                    {
 
-                    data: [],
+                        label: "Altitude (m)",
 
-                    borderWidth: 2,
+                        data: [],
 
-                    tension: 0.3,
+                        borderWidth: 2,
 
-                    fill: false
+                        tension: 0.3,
 
-                }]
+                        fill: false
+
+                    }
+
+                ]
 
             },
 
@@ -154,6 +210,7 @@ const altitudeChart =
             }
 
         }
+
     );
 
 
@@ -162,10 +219,13 @@ const altitudeChart =
 // ==========================================
 
 const temperatureChart =
+
     new Chart(
+
         document
             .getElementById("temperatureChart")
             .getContext("2d"),
+
         {
 
             type: "line",
@@ -174,19 +234,24 @@ const temperatureChart =
 
                 labels: [],
 
-                datasets: [{
+                datasets: [
 
-                    label: "Temperature (°C)",
+                    {
 
-                    data: [],
+                        label:
+                            "Temperature (°C)",
 
-                    borderWidth: 2,
+                        data: [],
 
-                    tension: 0.3,
+                        borderWidth: 2,
 
-                    fill: false
+                        tension: 0.3,
 
-                }]
+                        fill: false
+
+                    }
+
+                ]
 
             },
 
@@ -227,6 +292,7 @@ const temperatureChart =
             }
 
         }
+
     );
 
 
@@ -235,10 +301,13 @@ const temperatureChart =
 // ==========================================
 
 const pressureChart =
+
     new Chart(
+
         document
             .getElementById("pressureChart")
             .getContext("2d"),
+
         {
 
             type: "line",
@@ -247,19 +316,24 @@ const pressureChart =
 
                 labels: [],
 
-                datasets: [{
+                datasets: [
 
-                    label: "Pressure (hPa)",
+                    {
 
-                    data: [],
+                        label:
+                            "Pressure (hPa)",
 
-                    borderWidth: 2,
+                        data: [],
 
-                    tension: 0.3,
+                        borderWidth: 2,
 
-                    fill: false
+                        tension: 0.3,
 
-                }]
+                        fill: false
+
+                    }
+
+                ]
 
             },
 
@@ -300,54 +374,136 @@ const pressureChart =
             }
 
         }
+
     );
 
 
 // ==========================================
-// LOAD CSV
+// FILE SELECTION
 // ==========================================
 
-async function loadCSV() {
+csvFile.addEventListener(
+    "change",
+    function () {
 
-    try {
+        if (csvFile.files.length === 0) {
 
-        communicationStatus.textContent =
-            "LOADING";
+            fileName.textContent =
+                "No telemetry file selected";
 
-        const response =
-            await fetch(
-                CSV_FILE + "?v=" + Date.now()
-            );
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Could not load telemetry.csv"
-            );
+            return;
 
         }
 
-        const csvText =
-            await response.text();
 
-        parseCSV(csvText);
+        const file =
+            csvFile.files[0];
+
+
+        fileName.textContent =
+            "Selected: " + file.name;
+
+    }
+);
+
+
+// ==========================================
+// UPLOAD BUTTON
+// ==========================================
+
+uploadButton.addEventListener(
+    "click",
+    function () {
+
+        if (csvFile.files.length === 0) {
+
+            alert(
+                "Please select a CSV telemetry file first."
+            );
+
+            return;
+
+        }
+
+
+        const file =
+            csvFile.files[0];
+
+
+        readCSVFile(file);
+
+    }
+);
+
+
+// ==========================================
+// READ CSV FILE
+// ==========================================
+
+function readCSVFile(file) {
+
+    // Stop previous replay
+
+    if (replayTimer) {
+
+        clearTimeout(replayTimer);
+
+        replayTimer = null;
 
     }
 
-    catch (error) {
 
-        console.error(
-            "CSV loading error:",
-            error
-        );
+    systemStatus.textContent =
+        "PROCESSING";
 
-        communicationStatus.textContent =
-            "DISCONNECTED";
 
-        systemStatus.textContent =
-            "ERROR";
+    communicationStatus.textContent =
+        "PROCESSING";
 
-    }
+
+    liveLabel.textContent =
+        "PROCESSING";
+
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function (event) {
+
+            const csvText =
+                event.target.result;
+
+
+            parseCSV(csvText);
+
+        };
+
+
+    reader.onerror =
+        function () {
+
+            systemStatus.textContent =
+                "ERROR";
+
+
+            communicationStatus.textContent =
+                "ERROR";
+
+
+            liveLabel.textContent =
+                "ERROR";
+
+
+            alert(
+                "Could not read the CSV file."
+            );
+
+        };
+
+
+    reader.readAsText(file);
 
 }
 
@@ -361,53 +517,120 @@ function parseCSV(csvText) {
     const lines =
         csvText.split(/\r?\n/);
 
+
     telemetryData = [];
 
-    // Skip header
-    for (let i = 1; i < lines.length; i++) {
+
+    if (lines.length < 2) {
+
+        alert(
+            "The CSV file does not contain telemetry data."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================
+    // FIND HEADER
+    // ======================================
+
+    const header =
+        lines[0]
+            .trim()
+            .toLowerCase();
+
+
+    console.log(
+        "CSV Header:",
+        header
+    );
+
+
+    // ======================================
+    // PROCESS ROWS
+    // ======================================
+
+    for (
+        let i = 1;
+        i < lines.length;
+        i++
+    ) {
 
         const line =
             lines[i].trim();
+
 
         if (!line) {
             continue;
         }
 
+
         const columns =
             line.split(",");
 
-        // Need six columns
-        if (columns.length !== 6) {
+
+        // Expected format:
+        //
+        // Sample
+        // Time(ms)
+        // Temperature(C)
+        // Pressure(hPa)
+        // Altitude(m)
+        // RelativeAltitude(m)
+
+        if (columns.length < 6) {
 
             console.warn(
-                "Skipped corrupted row:",
+                "Skipped invalid row:",
                 line
             );
 
             continue;
+
         }
 
 
         const sample =
-            Number(columns[0]);
+            Number(
+                columns[0].trim()
+            );
+
 
         const timeMs =
-            Number(columns[1]);
+            Number(
+                columns[1].trim()
+            );
+
 
         const temperature =
-            Number(columns[2]);
+            Number(
+                columns[2].trim()
+            );
+
 
         const pressure =
-            Number(columns[3]);
+            Number(
+                columns[3].trim()
+            );
+
 
         const altitude =
-            Number(columns[4]);
+            Number(
+                columns[4].trim()
+            );
+
 
         const relativeAltitude =
-            Number(columns[5]);
+            Number(
+                columns[5].trim()
+            );
 
 
-        // Check for invalid values
+        // ==================================
+        // VALIDATE DATA
+        // ==================================
 
         if (
 
@@ -426,25 +649,35 @@ function parseCSV(csvText) {
         ) {
 
             console.warn(
-                "Skipped invalid row:",
+                "Skipped corrupted row:",
                 line
             );
 
             continue;
+
         }
 
 
+        // ==================================
+        // STORE DATA
+        // ==================================
+
         telemetryData.push({
 
-            sample: sample,
+            sample:
+                sample,
 
-            timeMs: timeMs,
+            timeMs:
+                timeMs,
 
-            temperature: temperature,
+            temperature:
+                temperature,
 
-            pressure: pressure,
+            pressure:
+                pressure,
 
-            altitude: altitude,
+            altitude:
+                altitude,
 
             relativeAltitude:
                 relativeAltitude
@@ -460,24 +693,48 @@ function parseCSV(csvText) {
     );
 
 
+    // ======================================
+    // CHECK DATA
+    // ======================================
+
     if (telemetryData.length === 0) {
+
+        systemStatus.textContent =
+            "NO DATA";
+
 
         communicationStatus.textContent =
             "DISCONNECTED";
 
-        systemStatus.textContent =
+
+        liveLabel.textContent =
             "NO DATA";
+
+
+        alert(
+            "No valid telemetry rows were found in the CSV."
+        );
+
 
         return;
 
     }
 
 
-    communicationStatus.textContent =
-        "CONNECTED";
+    // ======================================
+    // START TELEMETRY
+    // ======================================
 
     systemStatus.textContent =
         "ACTIVE";
+
+
+    communicationStatus.textContent =
+        "CONNECTED";
+
+
+    liveLabel.textContent =
+        "LIVE";
 
 
     startReplay();
@@ -496,7 +753,7 @@ function startReplay() {
     receivedPackets = 0;
 
 
-    // Clear chart data
+    // Clear graph data
 
     timeData = [];
 
@@ -506,6 +763,13 @@ function startReplay() {
 
     pressureData = [];
 
+
+    // Clear table
+
+    telemetryBody.innerHTML = "";
+
+
+    // Clear charts
 
     altitudeChart.data.labels =
         timeData;
@@ -535,8 +799,7 @@ function startReplay() {
     pressureChart.update();
 
 
-    telemetryBody.innerHTML = "";
-
+    // Start
 
     sendNextPacket();
 
@@ -544,44 +807,63 @@ function startReplay() {
 
 
 // ==========================================
-// SEND NEXT TELEMETRY PACKET
+// SEND TELEMETRY PACKET
 // ==========================================
 
 function sendNextPacket() {
 
     // ======================================
-    // STOP AT END
+    // STOP AT LAST PACKET
     // ======================================
 
     if (
+
         currentPacketIndex >=
         telemetryData.length
-    ) {
 
-        communicationStatus.textContent =
-            "COMPLETED";
+    ) {
 
         systemStatus.textContent =
             "MISSION COMPLETE";
 
+
+        communicationStatus.textContent =
+            "COMPLETED";
+
+
+        liveLabel.textContent =
+            "COMPLETE";
+
+
+        statusDot.style.background =
+            "#22c55e";
+
+
         console.log(
             "Telemetry replay completed."
         );
+
 
         return;
 
     }
 
 
+    // ======================================
+    // CURRENT PACKET
+    // ======================================
+
     const data =
-        telemetryData[currentPacketIndex];
+        telemetryData[
+            currentPacketIndex
+        ];
 
 
     receivedPackets++;
 
 
     // ======================================
-    // SENSOR CARDS
+    // SENSOR VALUES
     // ======================================
 
     temperatureDisplay.textContent =
@@ -599,6 +881,8 @@ function sendNextPacket() {
         " m";
 
 
+    // Battery is not in current CSV
+
     batteryDisplay.textContent =
         "N/A";
 
@@ -612,7 +896,9 @@ function sendNextPacket() {
 
 
     missionTime.textContent =
-        formatMissionTime(data.timeMs);
+        formatMissionTime(
+            data.timeMs
+        );
 
 
     // ======================================
@@ -620,10 +906,14 @@ function sendNextPacket() {
     // ======================================
 
     const displayTime =
-        formatMissionTime(data.timeMs);
+        formatMissionTime(
+            data.timeMs
+        );
 
 
-    timeData.push(displayTime);
+    timeData.push(
+        displayTime
+    );
 
 
     altitudeData.push(
@@ -636,27 +926,9 @@ function sendNextPacket() {
     );
 
 
-    // THIS IS THE IMPORTANT PART
-    // PRESSURE DATA IS ADDED HERE
-
     pressureData.push(
         data.pressure
     );
-
-
-    // Keep last 50 points
-
-    if (timeData.length > 50) {
-
-        timeData.shift();
-
-        altitudeData.shift();
-
-        temperatureData.shift();
-
-        pressureData.shift();
-
-    }
 
 
     // ======================================
@@ -666,8 +938,10 @@ function sendNextPacket() {
     altitudeChart.data.labels =
         timeData;
 
+
     altitudeChart.data.datasets[0].data =
         altitudeData;
+
 
     altitudeChart.update();
 
@@ -679,8 +953,10 @@ function sendNextPacket() {
     temperatureChart.data.labels =
         timeData;
 
+
     temperatureChart.data.datasets[0].data =
         temperatureData;
+
 
     temperatureChart.update();
 
@@ -692,8 +968,10 @@ function sendNextPacket() {
     pressureChart.data.labels =
         timeData;
 
+
     pressureChart.data.datasets[0].data =
         pressureData;
+
 
     pressureChart.update();
 
@@ -707,6 +985,10 @@ function sendNextPacket() {
 
 
     row.innerHTML = `
+
+        <td>
+            ${data.sample}
+        </td>
 
         <td>
             ${displayTime}
@@ -725,7 +1007,7 @@ function sendNextPacket() {
         </td>
 
         <td>
-            N/A
+            ${data.relativeAltitude.toFixed(2)} m
         </td>
 
     `;
@@ -734,7 +1016,7 @@ function sendNextPacket() {
     telemetryBody.prepend(row);
 
 
-    // Keep 30 rows
+    // Keep last 30 rows
 
     if (
         telemetryBody.children.length > 30
@@ -747,23 +1029,17 @@ function sendNextPacket() {
     }
 
 
-    currentPacketIndex++;
-
-
     // ======================================
     // NEXT PACKET
     // ======================================
 
-    setTimeout(
-        sendNextPacket,
-        REPLAY_INTERVAL
-    );
+    currentPacketIndex++;
+
+
+    replayTimer =
+        setTimeout(
+            sendNextPacket,
+            REPLAY_INTERVAL
+        );
 
 }
-
-
-// ==========================================
-// START APPLICATION
-// ==========================================
-
-loadCSV();
